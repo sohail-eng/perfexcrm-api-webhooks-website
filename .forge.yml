@@ -1,0 +1,49 @@
+# Laravel Forge Configuration
+# This file contains Forge-specific settings
+
+name: PerfexCRM API Website
+type: nodejs
+node_version: 20
+
+# Build settings
+build:
+  - npm ci --production=false
+  - npx prisma migrate deploy
+  - npx prisma generate
+  - npm run build
+
+# Runtime settings
+runtime:
+  command: npm start
+  port: 3000
+  process_manager: pm2
+
+# Environment
+environment:
+  NODE_ENV: production
+
+# Health checks
+health_check:
+  path: /api/health
+  interval: 30
+  timeout: 10
+
+# Auto-restart
+restart:
+  on_failure: true
+  max_restarts: 5
+  
+# Resources
+resources:
+  memory: 1GB
+  cpu: 1
+
+# Logging
+logging:
+  level: info
+  path: /home/forge/logs
+
+# Notifications
+notifications:
+  slack: false
+  email: true

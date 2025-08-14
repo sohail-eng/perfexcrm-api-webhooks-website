@@ -10,23 +10,24 @@ import {
   ArrowUpRight, ArrowDownRight, Copy, Eye
 } from 'lucide-react';
 import StripeSetupModal from '@/components/StripeSetupModal';
+import type { AdminUser, StripeConfig, Sale, Stats, ChartData } from '@/types/admin';
 
 export default function EnhancedAdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   
   // Stripe Configuration State
-  const [stripeConfig, setStripeConfig] = useState<any>(null);
+  const [stripeConfig, setStripeConfig] = useState<StripeConfig | null>(null);
   const [stripeConnecting, setStripeConnecting] = useState(false);
   const [productsCreating, setProductsCreating] = useState(false);
   const [showStripeModal, setShowStripeModal] = useState(false);
   
   // Sales & Stats State
-  const [stats, setStats] = useState<any>(null);
-  const [sales, setSales] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [period, setPeriod] = useState('30days');
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function EnhancedAdminDashboard() {
       const stripeRes = await fetch('/api/admin/stripe/setup');
       const stripeData = await stripeRes.json();
       if (stripeData.connected) {
-        setStripeConfig(prev => ({ ...prev, ...stripeData.config }));
+        setStripeConfig((prev: StripeConfig | null) => ({ ...prev, ...stripeData.config } as StripeConfig));
       }
 
       // Load sales data

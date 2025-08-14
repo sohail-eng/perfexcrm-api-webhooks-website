@@ -7,9 +7,10 @@ import {
   BarChart3, Users, DollarSign, ShoppingBag, Download, TrendingUp,
   Calendar, Settings, CreditCard, Package, Webhook, LogOut, RefreshCw,
   ExternalLink, Plus, CheckCircle, XCircle, AlertCircle, Loader2,
-  ArrowUpRight, ArrowDownRight, Copy, Eye
+  ArrowUpRight, ArrowDownRight, Copy, Eye, Mail
 } from 'lucide-react';
 import StripeSetupModal from '@/components/StripeSetupModal';
+import SmtpSettings from '@/components/SmtpSettings';
 import type { AdminUser, StripeConfig, Sale, Stats, ChartData } from '@/types/admin';
 
 export default function EnhancedAdminDashboard() {
@@ -193,6 +194,7 @@ export default function EnhancedAdminDashboard() {
               { id: 'sales', label: 'Sales', icon: ShoppingBag },
               { id: 'stripe', label: 'Stripe Setup', icon: CreditCard },
               { id: 'products', label: 'Products', icon: Package },
+              { id: 'smtp', label: 'Email Settings', icon: Mail },
               { id: 'webhooks', label: 'Webhooks', icon: Webhook },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((tab) => {
@@ -663,6 +665,12 @@ export default function EnhancedAdminDashboard() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'smtp' && (
+          <div className="space-y-6">
+            <SmtpSettings />
           </div>
         )}
 

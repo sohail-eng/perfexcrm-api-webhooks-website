@@ -185,18 +185,18 @@ const IntegrationShowcase = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-16 text-center"
+          className="mt-16 text-center overflow-x-auto"
         >
-          <div className="inline-flex items-center justify-center space-x-8 p-8 bg-white rounded-2xl shadow-lg">
-            <div className="text-2xl font-bold text-slate-900">PerfexCRM</div>
+          <div className="inline-flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 p-6 sm:p-8 bg-white rounded-2xl shadow-lg min-w-fit">
+            <div className="text-xl sm:text-2xl font-bold text-slate-900 whitespace-nowrap">PerfexCRM</div>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
-              <div className="w-16 h-0.5 bg-primary-500" />
-              <Webhook className="w-8 h-8 text-primary-500" />
-              <div className="w-16 h-0.5 bg-primary-500" />
+              <div className="w-8 sm:w-16 h-0.5 bg-primary-500" />
+              <Webhook className="w-6 sm:w-8 h-6 sm:h-8 text-primary-500 flex-shrink-0" />
+              <div className="w-8 sm:w-16 h-0.5 bg-primary-500" />
               <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
             </div>
-            <div className="text-2xl font-bold gradient-text">1000+ Apps</div>
+            <div className="text-xl sm:text-2xl font-bold gradient-text whitespace-nowrap">1000+ Apps</div>
           </div>
         </motion.div>
       </div>

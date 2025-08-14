@@ -145,7 +145,7 @@ const Hero = () => {
               <motion.div
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 4, repeat: Infinity }}
-                className="absolute -top-4 -left-4 bg-white rounded-lg shadow-xl p-3 z-10"
+                className="absolute -top-4 left-0 sm:-left-4 bg-white rounded-lg shadow-xl p-3 z-10"
               >
                 <div className="flex items-center space-x-2">
                   <Shield className="w-5 h-5 text-green-500" />
@@ -156,11 +156,11 @@ const Hero = () => {
               <motion.div
                 animate={{ y: [10, -10, 10] }}
                 transition={{ duration: 4, repeat: Infinity, delay: 1 }}
-                className="absolute -bottom-4 -right-4 bg-white rounded-lg shadow-xl p-3 z-10"
+                className="absolute -bottom-4 right-0 sm:-right-4 bg-white rounded-lg shadow-xl p-3 z-10"
               >
                 <div className="flex items-center space-x-2">
                   <Globe className="w-5 h-5 text-blue-500" />
-                  <span className="text-sm font-semibold">1000+ Integrations</span>
+                  <span className="text-xs sm:text-sm font-semibold">1000+ Integrations</span>
                 </div>
               </motion.div>
 

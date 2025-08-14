@@ -11,12 +11,12 @@ const Footer = () => {
       { label: 'Features', href: '/#features' },
       { label: 'Integrations', href: '/#integrations' },
       { label: 'Pricing', href: '/#pricing' },
-      { label: 'Documentation', href: '/docs' },
+      { label: 'Members Area', href: '/members' },
     ],
     support: [
+      { label: 'Documentation', href: '/docs' },
       { label: 'Installation Guide', href: '/installation' },
       { label: 'API Reference', href: '/api-reference' },
-      { label: 'FAQ', href: '/#faq' },
       { label: 'Contact Support', href: 'mailto:support@perfexapi.com' },
     ],
     legal: [

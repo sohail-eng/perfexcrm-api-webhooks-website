@@ -1,0 +1,184 @@
+{
+  "scenarios": [
+    {
+      "name": "PerfexCRM Customer Onboarding",
+      "description": "Automate customer onboarding process",
+      "modules": [
+        {
+          "type": "webhook",
+          "name": "Receive Customer Data",
+          "config": {
+            "method": "POST",
+            "headers": {
+              "Content-Type": "application/json"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Create Customer in PerfexCRM",
+          "config": {
+            "url": "https://your-perfexcrm.com/api/customers",
+            "method": "POST",
+            "headers": {
+              "Authorization": "Bearer {{api_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "company": "{{1.company}}",
+              "email": "{{1.email}}",
+              "phone": "{{1.phone}}",
+              "address": "{{1.address}}"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Create Project",
+          "config": {
+            "url": "https://your-perfexcrm.com/api/projects",
+            "method": "POST",
+            "headers": {
+              "Authorization": "Bearer {{api_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "name": "Onboarding - {{2.company}}",
+              "customer_id": "{{2.id}}",
+              "status": "in_progress",
+              "start_date": "{{now}}",
+              "deadline": "{{addDays(now, 30)}}"
+            }
+          }
+        },
+        {
+          "type": "email",
+          "name": "Send Welcome Email",
+          "config": {
+            "to": "{{1.email}}",
+            "subject": "Welcome to {{company_name}}!",
+            "body": "Dear {{2.contact_name}},\n\nWelcome aboard! Your account has been created and your onboarding project has been initiated.\n\nProject ID: {{3.id}}\nProject Manager: {{3.project_manager}}\n\nBest regards,\n{{company_name}} Team"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoice Payment Tracking",
+      "description": "Track and update invoice payments automatically",
+      "modules": [
+        {
+          "type": "stripe",
+          "name": "Watch Stripe Payments",
+          "config": {
+            "event": "payment_intent.succeeded"
+          }
+        },
+        {
+          "type": "http",
+          "name": "Get Invoice Details",
+          "config": {
+            "url": "https://your-perfexcrm.com/api/invoices/{{1.metadata.invoice_id}}",
+            "method": "GET",
+            "headers": {
+              "Authorization": "Bearer {{api_token}}"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Update Invoice Status",
+          "config": {
+            "url": "https://your-perfexcrm.com/api/invoices/{{1.metadata.invoice_id}}",
+            "method": "PUT",
+            "headers": {
+              "Authorization": "Bearer {{api_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "status": "paid",
+              "payment_date": "{{1.created}}",
+              "payment_method": "{{1.payment_method_types[0]}}",
+              "transaction_id": "{{1.id}}"
+            }
+          }
+        },
+        {
+          "type": "slack",
+          "name": "Notify Finance Team",
+          "config": {
+            "channel": "#finance",
+            "message": "💰 Payment Received!\nInvoice: #{{2.invoice_number}}\nAmount: {{formatNumber(1.amount/100, 2)}} {{1.currency}}\nCustomer: {{2.client_name}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lead Scoring and Assignment",
+      "description": "Score leads and assign to sales team",
+      "modules": [
+        {
+          "type": "webhook",
+          "name": "New Lead",
+          "config": {
+            "method": "POST"
+          }
+        },
+        {
+          "type": "tools",
+          "name": "Calculate Lead Score",
+          "config": {
+            "formula": "{{if(1.company_size > 100, 30, if(1.company_size > 50, 20, 10))}} + {{if(1.budget > 10000, 40, if(1.budget > 5000, 25, 10))}} + {{if(contains(1.source, 'referral'), 30, 10))}}"
+          }
+        },
+        {
+          "type": "router",
+          "name": "Route by Score",
+          "routes": [
+            {
+              "condition": "{{2.score >= 70}}",
+              "label": "Hot Lead"
+            },
+            {
+              "condition": "{{2.score >= 40}}",
+              "label": "Warm Lead"
+            },
+            {
+              "condition": "{{2.score < 40}}",
+              "label": "Cold Lead"
+            }
+          ]
+        },
+        {
+          "type": "http",
+          "name": "Assign to Senior Sales",
+          "config": {
+            "url": "https://your-perfexcrm.com/api/leads/{{1.id}}/assign",
+            "method": "POST",
+            "headers": {
+              "Authorization": "Bearer {{api_token}}",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "assigned_to": "senior_sales_team",
+              "priority": "high",
+              "score": "{{2.score}}"
+            }
+          },
+          "route": "Hot Lead"
+        }
+      ]
+    }
+  ],
+  "connections": {
+    "perfexcrm": {
+      "name": "PerfexCRM API",
+      "type": "oauth2",
+      "parameters": {
+        "base_url": "https://your-perfexcrm.com/api",
+        "auth_url": "https://your-perfexcrm.com/oauth/authorize",
+        "token_url": "https://your-perfexcrm.com/oauth/token",
+        "scope": "read write"
+      }
+    }
+  }
+}

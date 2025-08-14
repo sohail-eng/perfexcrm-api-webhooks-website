@@ -1,78 +1,52 @@
 #!/bin/bash
-# ============================================
-# Laravel Forge Deployment Script for Next.js
-# PerfexCRM API & Webhooks Website
-# ============================================
 
-echo "🚀 Starting deployment..."
+# Laravel Forge Deployment Script for Next.js Application
+# This script handles the deployment process for the PerfexCRM API Website
+
+set -e
+
+echo "🚀 Starting Forge deployment..."
 
 # Navigate to project directory
-cd $FORGE_SITE_PATH
+cd /home/forge/perfexapi.com
 
 # Pull latest changes from git
-echo "📥 Pulling latest changes from repository..."
-git pull origin $FORGE_SITE_BRANCH
+echo "📥 Pulling latest changes from git..."
+git pull origin main
 
-# Install/Update Node.js dependencies
+# Install dependencies
 echo "📦 Installing dependencies..."
 npm ci --production=false
 
-# Copy environment variables if needed
-if [ -f .env.production ]; then
-    echo "🔧 Loading production environment variables..."
-    cp .env.production .env.local
-elif [ -f .env ] && [ ! -f .env.local ]; then
-    echo "🔧 Copying .env to .env.local..."
-    cp .env .env.local
+# Run database migrations if using Prisma
+if [ -f "prisma/schema.prisma" ]; then
+    echo "🗄️ Running database migrations..."
+    npx prisma migrate deploy
+    npx prisma generate
 fi
 
-# Run database migrations
-echo "🗄️ Running database migrations..."
-npx prisma migrate deploy
-npx prisma generate
-
-# Build the Next.js application
-echo "🏗️ Building Next.js application..."
+# Build the application
+echo "🔨 Building application..."
 npm run build
 
-# Check if PM2 is installed
-if ! command -v pm2 &> /dev/null; then
-    echo "📦 Installing PM2..."
-    sudo npm install -g pm2
+# Copy environment variables if needed
+if [ -f ".env.production" ]; then
+    cp .env.production .env.local
 fi
 
-# Create logs directory if it doesn't exist
-mkdir -p logs
+# Reload PM2 process
+echo "♻️ Reloading PM2 process..."
+pm2 reload ecosystem.config.js --update-env
 
-# Stop existing application (don't exit on error)
-echo "⏹️ Stopping existing application..."
-pm2 stop perfexcrm-api-website 2>/dev/null || true
-pm2 delete perfexcrm-api-website 2>/dev/null || true
-
-# Start the application
-echo "▶️ Starting application..."
-if [ -f ecosystem.config.js ]; then
-    pm2 start ecosystem.config.js
-else
-    pm2 start npm --name "perfexcrm-api-website" -- start
-fi
-
-# Save PM2 configuration
-pm2 save
-
-# Clear cache
-echo "🧹 Clearing cache..."
-rm -rf .next/cache
-
-# Set proper permissions
-echo "🔒 Setting permissions..."
-sudo chown -R forge:forge $FORGE_SITE_PATH
-sudo chmod -R 755 $FORGE_SITE_PATH
+# Optional: Clear any caches
+# echo "🧹 Clearing caches..."
+# rm -rf .next/cache
 
 echo "✅ Deployment completed successfully!"
-echo "📊 Application status:"
+echo "📊 PM2 Status:"
 pm2 list
 
-# Health check (optional, non-blocking)
-echo "🏥 Performing health check in 5 seconds..."
-(sleep 5 && curl -s http://localhost:3000/api/health > /dev/null && echo "✅ Health check passed") &
+# Health check
+echo "🏥 Running health check..."
+sleep 5
+curl -f http://localhost:3000/api/health || echo "⚠️ Health check failed"

@@ -28,6 +28,7 @@ const Header = () => {
     { href: isHomePage ? '#code' : '/#code', label: 'Code Examples' },
     { href: isHomePage ? '#pricing' : '/#pricing', label: 'Pricing' },
     { href: isHomePage ? '#faq' : '/#faq', label: 'FAQ' },
+    { href: '/members', label: 'Members' },
   ];
 
   return (

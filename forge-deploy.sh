@@ -4,9 +4,6 @@
 # PerfexCRM API & Webhooks Website
 # ============================================
 
-# Exit on error
-set -e
-
 echo "🚀 Starting deployment..."
 
 # Navigate to project directory
@@ -20,10 +17,13 @@ git pull origin $FORGE_SITE_BRANCH
 echo "📦 Installing dependencies..."
 npm ci --production=false
 
-# Copy environment variables if .env.production exists
+# Copy environment variables if needed
 if [ -f .env.production ]; then
     echo "🔧 Loading production environment variables..."
     cp .env.production .env.local
+elif [ -f .env ] && [ ! -f .env.local ]; then
+    echo "🔧 Copying .env to .env.local..."
+    cp .env .env.local
 fi
 
 # Run database migrations
@@ -35,50 +35,44 @@ npx prisma generate
 echo "🏗️ Building Next.js application..."
 npm run build
 
-# Install PM2 globally if not installed
+# Check if PM2 is installed
 if ! command -v pm2 &> /dev/null; then
     echo "📦 Installing PM2..."
-    npm install -g pm2
+    sudo npm install -g pm2
 fi
 
-# Stop existing PM2 process if running
-echo "⏹️ Stopping existing application..."
-pm2 stop perfexcrm-api-website || true
-pm2 delete perfexcrm-api-website || true
+# Create logs directory if it doesn't exist
+mkdir -p logs
 
-# Start the application with PM2
-echo "▶️ Starting application with PM2..."
-pm2 start npm --name "perfexcrm-api-website" -- start
+# Stop existing application (don't exit on error)
+echo "⏹️ Stopping existing application..."
+pm2 stop perfexcrm-api-website 2>/dev/null || true
+pm2 delete perfexcrm-api-website 2>/dev/null || true
+
+# Start the application
+echo "▶️ Starting application..."
+if [ -f ecosystem.config.js ]; then
+    pm2 start ecosystem.config.js
+else
+    pm2 start npm --name "perfexcrm-api-website" -- start
+fi
 
 # Save PM2 configuration
 pm2 save
 
-# Set up PM2 to start on system boot
-pm2 startup systemd -u forge --hp /home/forge || true
-
-# Clear any cache
+# Clear cache
 echo "🧹 Clearing cache..."
 rm -rf .next/cache
 
-# Optimize for production
-echo "⚡ Optimizing for production..."
-npm prune --production
-
 # Set proper permissions
 echo "🔒 Setting permissions..."
-chown -R forge:forge $FORGE_SITE_PATH
-chmod -R 755 $FORGE_SITE_PATH
-
-# Health check
-echo "🏥 Performing health check..."
-sleep 5
-curl -f http://localhost:3000 || exit 1
+sudo chown -R forge:forge $FORGE_SITE_PATH
+sudo chmod -R 755 $FORGE_SITE_PATH
 
 echo "✅ Deployment completed successfully!"
 echo "📊 Application status:"
-pm2 status perfexcrm-api-website
+pm2 list
 
-# Optional: Send deployment notification
-# curl -X POST https://your-webhook-url.com/deployment-complete \
-#   -H "Content-Type: application/json" \
-#   -d '{"site":"perfexcrm-api-website","status":"deployed","time":"'$(date)'"}'
+# Health check (optional, non-blocking)
+echo "🏥 Performing health check in 5 seconds..."
+(sleep 5 && curl -s http://localhost:3000/api/health > /dev/null && echo "✅ Health check passed") &

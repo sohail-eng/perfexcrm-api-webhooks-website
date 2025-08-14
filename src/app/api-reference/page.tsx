@@ -174,7 +174,7 @@ export default function ApiReferencePage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <Header />
 
-      {/* Hero */>
+      {/* Hero */}
       <section className="pt-32 pb-16 bg-gradient-to-br from-primary-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div

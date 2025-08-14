@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions  Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model StripeConfig {
+  id                    String   @id @default(cuid())
+  publishableKey        String?
+  secretKey             String?
+  webhookSecret         String?
+  regularPriceId        String?
+  extendedPriceId       String?
+  regularProductId      String?
+  extendedProductId     String?
+  isLive                Boolean  @default(false)
+  stripeAccountId       String?
+  stripeAccountName     String?
+  connectedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  stripeProductId String  @unique
+  stripePriceId   String  @unique
+  name          String
+  description   String?
+  price         Int
+  currency      String   @default("usd")
+  licenseType   String   // 'regular' or 'extended'
+  features      Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sales         Sale[]
+}
+
+model Sale {
+  id                String   @id @default(cuid())
+  stripeSessionId   String   @unique
+  stripePaymentId   String?
+  customerEmail     String
+  customerName      String?
+  amount            Int
+  currency          String
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id])
+  licenseKey        String   @unique
+  status            String   @default("pending") // pending, completed, failed, refunded
+  downloadCount     Int      @default(0)
+  lastDownloadAt    DateTime?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String   @default("string") // string, number, boolean, json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WebhookLog {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  payload     Json
+  processed   Boolean  @default(false)
+  error       String?
+  createdAt   DateTime @default(now())
+}

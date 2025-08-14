@@ -1,0 +1,423 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  DollarSign, TrendingUp, Users, Package, 
+  Calendar, Download, Eye, Lock, RefreshCw,
+  CreditCard, ShoppingCart, FileText, BarChart3
+} from 'lucide-react';
+
+interface Sale {
+  id: string;
+  amount: number;
+  currency: string;
+  customerEmail: string;
+  licenseType: string;
+  status: string;
+  createdAt: string;
+}
+
+export default function AdminDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalSales: 0,
+    regularLicenses: 0,
+    extendedLicenses: 0,
+    todayRevenue: 0,
+    todaySales: 0,
+    monthRevenue: 0,
+    monthSales: 0,
+  });
+
+  // Simple authentication (in production, use proper auth)
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD || password === 'admin123') {
+      setIsAuthenticated(true);
+      fetchSales();
+    } else {
+      alert('Invalid password');
+    }
+  };
+
+  // Fetch sales data
+  const fetchSales = async () => {
+    setLoading(true);
+    try {
+      // In production, this would fetch from your database
+      const response = await fetch('/api/webhook/stripe');
+      const data = await response.json();
+      setSales(data.sales || []);
+      calculateStats(data.sales || []);
+    } catch (error) {
+      console.error('Error fetching sales:', error);
+    }
+    setLoading(false);
+  };
+
+  // Calculate statistics
+  const calculateStats = (salesData: Sale[]) => {
+    const today = new Date().toDateString();
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    let stats = {
+      totalRevenue: 0,
+      totalSales: salesData.length,
+      regularLicenses: 0,
+      extendedLicenses: 0,
+      todayRevenue: 0,
+      todaySales: 0,
+      monthRevenue: 0,
+      monthSales: 0,
+    };
+
+    salesData.forEach(sale => {
+      const saleDate = new Date(sale.createdAt);
+      const amount = sale.amount || 0;
+
+      // Total revenue
+      stats.totalRevenue += amount;
+
+      // License types
+      if (sale.licenseType === 'regular') {
+        stats.regularLicenses++;
+      } else if (sale.licenseType === 'extended') {
+        stats.extendedLicenses++;
+      }
+
+      // Today's stats
+      if (saleDate.toDateString() === today) {
+        stats.todayRevenue += amount;
+        stats.todaySales++;
+      }
+
+      // This month's stats
+      if (saleDate.getMonth() === currentMonth && saleDate.getFullYear() === currentYear) {
+        stats.monthRevenue += amount;
+        stats.monthSales++;
+      }
+    });
+
+    setStats(stats);
+  };
+
+  // Mock data for demo (remove in production)
+  useEffect(() => {
+    if (isAuthenticated && sales.length === 0) {
+      const mockSales: Sale[] = [
+        {
+          id: '1',
+          amount: 89,
+          currency: 'usd',
+          customerEmail: 'john@example.com',
+          licenseType: 'regular',
+          status: 'completed',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          amount: 449,
+          currency: 'usd',
+          customerEmail: 'sarah@company.com',
+          licenseType: 'extended',
+          status: 'completed',
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+        },
+        {
+          id: '3',
+          amount: 89,
+          currency: 'usd',
+          customerEmail: 'mike@startup.io',
+          licenseType: 'regular',
+          status: 'completed',
+          createdAt: new Date(Date.now() - 172800000).toISOString(),
+        },
+      ];
+      setSales(mockSales);
+      calculateStats(mockSales);
+    }
+  }, [isAuthenticated, sales.length]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-md"
+        >
+          <div className="flex items-center justify-center mb-6">
+            <div className="p-3 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg">
+              <Lock className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-center mb-6">Admin Dashboard</h2>
+          <form onSubmit={handleLogin}>
+            <input
+              type="password"
+              placeholder="Enter admin password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 mb-4"
+            />
+            <button
+              type="submit"
+              className="w-full py-3 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+            >
+              Login
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <h1 className="text-2xl font-bold gradient-text">Sales Dashboard</h1>
+            <button
+              onClick={fetchSales}
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
+              <span className="text-sm text-slate-500">All Time</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">
+              ${stats.totalRevenue.toLocaleString()}
+            </div>
+            <div className="text-sm text-slate-600 mt-1">
+              Total Revenue
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ShoppingCart className="w-6 h-6 text-blue-600" />
+              </div>
+              <span className="text-sm text-slate-500">All Time</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">
+              {stats.totalSales}
+            </div>
+            <div className="text-sm text-slate-600 mt-1">
+              Total Sales
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-purple-600" />
+              </div>
+              <span className="text-sm text-slate-500">Today</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">
+              ${stats.todayRevenue.toLocaleString()}
+            </div>
+            <div className="text-sm text-slate-600 mt-1">
+              {stats.todaySales} sales today
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Calendar className="w-6 h-6 text-orange-600" />
+              </div>
+              <span className="text-sm text-slate-500">This Month</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">
+              ${stats.monthRevenue.toLocaleString()}
+            </div>
+            <div className="text-sm text-slate-600 mt-1">
+              {stats.monthSales} sales
+            </div>
+          </motion.div>
+        </div>
+
+        {/* License Distribution */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold mb-4">License Distribution</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-slate-600">Regular License</span>
+                  <span className="font-semibold">{stats.regularLicenses}</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div
+                    className="bg-primary-500 h-2 rounded-full"
+                    style={{
+                      width: `${(stats.regularLicenses / (stats.totalSales || 1)) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-slate-600">Extended License</span>
+                  <span className="font-semibold">{stats.extendedLicenses}</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div
+                    className="bg-accent-500 h-2 rounded-full"
+                    style={{
+                      width: `${(stats.extendedLicenses / (stats.totalSales || 1)) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                <Download className="w-6 h-6 text-slate-600 mb-2" />
+                <span className="text-sm text-slate-600">Export Sales</span>
+              </button>
+              <button className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                <FileText className="w-6 h-6 text-slate-600 mb-2" />
+                <span className="text-sm text-slate-600">View Reports</span>
+              </button>
+              <button className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                <Users className="w-6 h-6 text-slate-600 mb-2" />
+                <span className="text-sm text-slate-600">Customers</span>
+              </button>
+              <button className="p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                <BarChart3 className="w-6 h-6 text-slate-600 mb-2" />
+                <span className="text-sm text-slate-600">Analytics</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Recent Sales */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-sm overflow-hidden"
+        >
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h3 className="text-lg font-semibold">Recent Sales</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    License
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {sales.map((sale) => (
+                  <tr key={sale.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                      {new Date(sale.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                      {sale.customerEmail}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        sale.licenseType === 'extended'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {sale.licenseType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                      ${sale.amount}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                        {sale.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button className="text-primary-600 hover:text-primary-700">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      </main>
+    </div>
+  );
+}
